@@ -5,3 +5,5 @@ language_set = Language updated to { $language }.
 birthday_help = Send your birthday as DD/MM/YYYY or YYYY-MM-DD. Example: /birthday 24/12/1991
 birthday_invalid = Invalid date. Use DD/MM/YYYY or YYYY-MM-DD.
 birthday_saved = Birthday saved: { $date }.
+nominate_result = The Choosen One for this task is { $name }.
+nominate_no_candidates = I need at least one other member to nominate.

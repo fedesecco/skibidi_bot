@@ -14,6 +14,7 @@ Telegram bot built with grammy and Supabase.
 - `/start` start the bot and store your profile
 - `/language <en|it|eng|ita>` set chat language
 - `/birthday <DD/MM/YYYY or YYYY-MM-DD>` store your birthday
+- `/nominate` pick a random member (excluding the requester)
 
 ## Notes
 

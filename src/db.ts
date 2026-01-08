@@ -8,6 +8,13 @@ type UserInput = {
   username?: string;
 };
 
+export type ChatMemberRecord = {
+  user_id: number;
+  first_name: string | null;
+  last_name: string | null;
+  username: string | null;
+};
+
 export function createDb(url: string, serviceKey: string) {
   const supabase = createClient(url, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false }
@@ -78,5 +85,25 @@ export function createDb(url: string, serviceKey: string) {
     if (error) throw error;
   }
 
-  return { ensureChat, getChatLanguage, setChatLanguage, upsertMember, setBirthday };
+  async function listMembers(chatId: number): Promise<ChatMemberRecord[]> {
+    const { data, error } = await supabase
+      .from("chat_members")
+      .select("user_id, first_name, last_name, username")
+      .eq("chat_id", chatId);
+
+    if (error) throw error;
+
+    return data ?? [];
+  }
+
+  return {
+    ensureChat,
+    getChatLanguage,
+    setChatLanguage,
+    upsertMember,
+    setBirthday,
+    listMembers
+  };
 }
+
+export type DbClient = ReturnType<typeof createDb>;
