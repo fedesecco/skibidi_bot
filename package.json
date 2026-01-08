@@ -1,0 +1,39 @@
+{
+  "name": "gangyoo",
+  "version": "0.1.0",
+  "description": "Telegram group bot for events and RSVPs",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "keywords": [
+    "telegram",
+    "bot",
+    "chat",
+    "group",
+    "events"
+  ],
+  "author": "Federico Secco",
+  "license": "MIT",
+  "homepage": "https://github.com/fedesecco/gangyoo#readme",
+  "bugs": {
+    "url": "https://github.com/fedesecco/gangyoo/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fedesecco/gangyoo.git"
+  },
+  "dependencies": {
+    "grammy": "^1.21.0",
+    "dotenv": "^16.4.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "ts-node-dev": "^2.0.0",
+    "@types/node": "^20.11.0"
+  }
+}
