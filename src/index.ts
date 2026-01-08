@@ -13,7 +13,7 @@ import type { BotContext, UserInput } from "./types.js";
 import { registerBirthdayCommand } from "./commands/birthday.js";
 import { registerLanguageCommand } from "./commands/language.js";
 import { registerNominateCommand } from "./commands/nominate.js";
-import { registerStartCommand } from "./commands/start.js";
+import { registerRegisterCommand } from "./commands/register.js";
 
 config();
 
@@ -105,7 +105,7 @@ bot.on("message", async (ctx, next) => {
   await next();
 });
 
-registerStartCommand(bot, {
+registerRegisterCommand(bot, {
   db,
   ensureChatOnce,
   initialLangFromUser,

@@ -2,7 +2,7 @@ import type { Bot } from "grammy";
 import type { BotContext, UserInput } from "../types.js";
 import type { BaseCommandDeps } from "./types.js";
 
-export function registerStartCommand(
+export function registerRegisterCommand(
   bot: Bot<BotContext>,
   deps: BaseCommandDeps
 ) {
