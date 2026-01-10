@@ -19,7 +19,7 @@ if (!token || !geminiKey) {
 }
 
 const allowedChatIds = new Set<number>([
-  // Add allowed chat IDs here.
+  -5052100473
 ]);
 if (allowedChatIds.size === 0) {
   console.warn(
@@ -31,6 +31,7 @@ const bot = new Bot<BotContext>(token);
 const db = createDbIfConfigured(supabaseUrl, supabaseKey);
 
 bot.on("message", async (ctx) => {
+  console.log("onMessage");
   const chatId = ctx.chat?.id;
   const from = ctx.from;
   if (!chatId || !from || from.is_bot) return;
@@ -41,7 +42,10 @@ bot.on("message", async (ctx) => {
 
   const botUsername = ctx.me?.username ?? bot.botInfo?.username;
   if (!botUsername) return;
-  if (!isBotMentioned(text, botUsername)) return;
+  if (!isBotMentioned(text, botUsername)) {
+    console.log("Ignoring a message because it does not mention the bot");
+    return
+  }
 
   const cleaned = stripBotMention(text, botUsername);
   const normalized =
@@ -50,6 +54,7 @@ bot.on("message", async (ctx) => {
       : "(user mentioned the bot without extra text)";
 
   try {
+    console.log("AI input:", normalized);
     const reply = await generateChatReply({
       text: normalized,
       chatId,
@@ -67,6 +72,7 @@ bot.on("message", async (ctx) => {
       return;
     }
 
+    console.log("AI output:", responseText);
     await ctx.reply(responseText, {
       reply_to_message_id: ctx.message?.message_id
     });
@@ -123,6 +129,7 @@ async function main() {
   if (webhookUrl) {
     await startWebhookServer(webhookUrl, webhookSecret);
   } else {
+    console.log("Deploying in dev mode.");
     bot.start();
   }
 }
@@ -159,3 +166,4 @@ main().catch((err) => {
   console.error("Startup error", err);
   process.exit(1);
 });
+

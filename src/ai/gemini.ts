@@ -1,7 +1,7 @@
 import { SYSTEM_PROMPT } from "./prompt.js";
 
-const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
-const GEMINI_MODEL = "gemini-1.5-flash";
+const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1";
+const GEMINI_MODEL = "gemini-2.5-flash";
 const GEMINI_TEMPERATURE = 1.1;
 const GEMINI_MAX_OUTPUT_TOKENS = 250;
 const GEMINI_TOP_P = 0.95;
@@ -20,18 +20,17 @@ export async function generateCompletion(userInput: string): Promise<string> {
   const endpoint = `${GEMINI_BASE_URL}/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(
     apiKey
   )}`;
+  const prompt = `${SYSTEM_PROMPT}\n\nUser message:\n${userInput}`;
 
   const response = await fetch(endpoint, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
-      systemInstruction: {
-        parts: [{ text: SYSTEM_PROMPT }]
-      },
+
       contents: [
         {
           role: "user",
-          parts: [{ text: userInput }]
+          parts: [{ text: prompt }]
         }
       ],
       generationConfig: {
@@ -46,7 +45,7 @@ export async function generateCompletion(userInput: string): Promise<string> {
   if (!response.ok) {
     const errorBody = await response.text();
     throw new Error(
-      `Gemini request failed (${response.status}): ${errorBody}`
+      `Gemini request failed (${response.status}) for ${GEMINI_MODEL}: ${errorBody}`
     );
   }
 
@@ -61,3 +60,5 @@ export async function generateCompletion(userInput: string): Promise<string> {
 
   return content;
 }
+
+
