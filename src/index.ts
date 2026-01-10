@@ -18,7 +18,9 @@ if (!token || !geminiKey) {
   throw new Error("Missing TELEGRAM_BOT_TOKEN or GEMINI_API_KEY in .env.");
 }
 
-const allowedChatIds = parseChatIdWhitelist(process.env.ALLOWED_CHAT_IDS);
+const allowedChatIds = new Set<number>([
+  // Add allowed chat IDs here.
+]);
 if (allowedChatIds.size === 0) {
   console.warn(
     "ALLOWED_CHAT_IDS is empty. The bot will ignore all incoming messages."
@@ -133,15 +135,6 @@ function createDbIfConfigured(
   return createDb(url, serviceKey);
 }
 
-
-function parseChatIdWhitelist(raw?: string): Set<number> {
-  if (!raw) return new Set();
-  const ids = raw
-    .split(",")
-    .map((entry) => Number(entry.trim()))
-    .filter((entry) => Number.isFinite(entry));
-  return new Set(ids);
-}
 
 function getMessageText(ctx: Context): string | null {
   return ctx.message?.text ?? ctx.message?.caption ?? null;
