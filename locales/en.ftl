@@ -1,4 +1,4 @@
-welcome = Hello! I'm Gangyoo. Use /language to set the bot language and /birthday to save your birthday.
+welcome = Hello! I'm Skibidi Bot. Use /language to set the bot language and /birthday to save your birthday.
 language_help = Type /language and tap ITA or ENG.
 language_prompt = Choose a language for this chat.
 language_invalid = Please tap ITA or ENG.

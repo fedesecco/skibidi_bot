@@ -1,6 +1,6 @@
-# Gangyoo
+# Skibidi Bot
 
-Gangyoo is a Telegram group bot that generates replies via Google Gemini when it is
+Skibidi Bot is a Telegram group bot that generates replies via Google Gemini when it is
 mentioned. The prompt and command catalog live inside this repo so they can be
 versioned and updated alongside the code.
 
@@ -29,8 +29,8 @@ versioned and updated alongside the code.
 
 Mention the bot in a whitelisted group chat:
 
-- `@Gangyoo can you register me?`
-- `@Gangyoo nominate someone for today`
+- `@SkibidiBot can you register me?`
+- `@SkibidiBot nominate someone for today`
 
 ## Manual webhook toggle
 
