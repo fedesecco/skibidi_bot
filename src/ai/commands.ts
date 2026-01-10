@@ -25,7 +25,7 @@ export const COMMANDS: Command[] = [
     instructions: "The user wants you to remember its birthday. So if the user does not specify a day, month or year you should ask him to re-tag you with all the infos.",
     keywords: ["birthday", "bday", "/birthday","date of birth"],
     exampleResponses: ["Got it. I noted your birthday as 24/12/1991.", "So you tell me your birthday without specifying the day? Are you retarded?"],
-    extraResponseFields: "birthday: javascript Date"
+    extraResponseFields: "birthday: YYYY-MM-DD string"
   },
   {
     inferredCommand: InferredCommand.Nominate,

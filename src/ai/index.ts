@@ -4,6 +4,7 @@ import { generateCompletion } from "./openai.js";
 export type AiReply = {
   inferredCommand: InferredCommand;
   responseText: string;
+  [key: string]: unknown;
 };
 
 export type ChatRequest = {
@@ -48,20 +49,28 @@ function parseAiReply(raw: string): AiReply {
   const jsonCandidate = extractFirstJsonObject(stripped) ?? stripped;
 
   try {
-    const parsed = JSON.parse(jsonCandidate) as Partial<AiReply>;
+    const parsed = JSON.parse(jsonCandidate) as Record<string, unknown>;
+    const inferredValue = parsed.inferredCommand;
     const normalizedCommand =
-      typeof parsed.inferredCommand === "string"
-        ? parsed.inferredCommand.trim().toLowerCase()
+      typeof inferredValue === "string"
+        ? inferredValue.trim().toLowerCase()
         : "";
     const inferredCommand = COMMAND_IDS.has(
       normalizedCommand as InferredCommand
     )
       ? (normalizedCommand as InferredCommand)
       : InferredCommand.Unknown;
+    const responseValue = parsed.responseText;
     const responseText =
-      typeof parsed.responseText === "string" ? parsed.responseText.trim() : "";
+      typeof responseValue === "string" ? responseValue.trim() : "";
 
-    return { inferredCommand, responseText };
+    const reply: AiReply = { inferredCommand, responseText };
+    for (const [key, value] of Object.entries(parsed)) {
+      if (key === "inferredCommand" || key === "responseText") continue;
+      reply[key] = value;
+    }
+
+    return reply;
   } catch {
     return { inferredCommand: InferredCommand.Unknown, responseText: stripped };
   }

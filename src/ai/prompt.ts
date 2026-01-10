@@ -6,18 +6,21 @@ function renderCommand(command: Command): string {
   const examples = command.exampleResponses
     .map((example) => `"${example}"`)
     .join(", ");
+  const extraFields = command.extraResponseFields
+    ? `\n  extra_response_fields: ${command.extraResponseFields}`
+    : "";
   return [
     `- inferredCommand: ${command.inferredCommand}`,
     `  instructions: ${command.instructions}`,
     `  keywords: ${keywords}`,
-    `  example_responses: [${examples}]`
+    `  example_responses: [${examples}]${extraFields}`
   ].join("\n");
 }
 
 const COMMANDS_BLOCK = COMMANDS.map(renderCommand).join("\n");
 
 export const SYSTEM_PROMPT = [
-  "You are Skibidi Bot, a sassy, funny Telegram bot that spices up group chats.",
+  "You are Skibidi Bot, a sassy, unhinged, funny Telegram bot that spices up group chats.",
   "Your goal is:",
   "read the message sent to you. ",
   "Try to understand if it's one of the commands listed in the Commands below",

@@ -1,9 +1,10 @@
 import { Bot, type Context, webhookCallback } from "grammy";
 import { config } from "dotenv";
 import http from "node:http";
-import { generateChatReply, type AiReply } from "./ai/index.js";
-import { InferredCommand } from "./ai/commands.js";
-import { createDb, type ChatMemberRecord, type DbClient } from "./db.js";
+import { generateChatReply } from "./ai/index.js";
+import { executeAiCommand } from "./commands/index.js";
+import { formatUserName } from "./commands/utils.js";
+import { createDb, type DbClient } from "./db.js";
 import type { BotContext } from "./types.js";
 
 config();
@@ -26,7 +27,6 @@ if (allowedChatIds.size === 0) {
 
 const bot = new Bot<BotContext>(token);
 const db = createDbIfConfigured(supabaseUrl, supabaseKey);
-const ensuredChats = new Set<number>();
 
 bot.on("message", async (ctx) => {
   const chatId = ctx.chat?.id;
@@ -48,15 +48,6 @@ bot.on("message", async (ctx) => {
       : "(user mentioned the bot without extra text)";
 
   try {
-    if (db) {
-      try {
-        await ensureChatOnce(db, chatId);
-        await db.upsertMember(chatId, from);
-      } catch (err) {
-        console.error("DB sync error", err);
-      }
-    }
-
     const reply = await generateChatReply({
       text: normalized,
       chatId,
@@ -66,7 +57,9 @@ bot.on("message", async (ctx) => {
       botUsername
     });
 
-    const responseText = (await applyCommandTransform(reply, ctx, db)).trim();
+    const responseText = (
+      await executeAiCommand(reply, { ctx, db })
+    ).trim();
     if (!responseText) {
       await ctx.reply("Sorry, I couldn't generate a response for that.");
       return;
@@ -140,68 +133,6 @@ function createDbIfConfigured(
   return createDb(url, serviceKey);
 }
 
-async function ensureChatOnce(dbClient: DbClient, chatId: number) {
-  if (ensuredChats.has(chatId)) return;
-  await dbClient.ensureChat(chatId, "en");
-  ensuredChats.add(chatId);
-}
-
-async function applyCommandTransform(
-  reply: AiReply,
-  ctx: Context,
-  dbClient: DbClient | null
-): Promise<string> {
-  switch (reply.inferredCommand) {
-    case InferredCommand.Nominate:
-      return resolveNomination(reply.responseText, ctx, dbClient);
-    default:
-      return reply.responseText;
-  }
-}
-
-async function resolveNomination(
-  responseText: string,
-  ctx: Context,
-  dbClient: DbClient | null
-): Promise<string> {
-  if (!responseText) return responseText;
-  const placeholderRegex = /\[random_user\]/gi;
-  if (!placeholderRegex.test(responseText)) return responseText;
-
-  const replacement = await pickRandomMemberLabel(ctx, dbClient);
-  return responseText.replace(placeholderRegex, replacement);
-}
-
-async function pickRandomMemberLabel(
-  ctx: Context,
-  dbClient: DbClient | null
-): Promise<string> {
-  const chatId = ctx.chat?.id;
-  if (!chatId || !dbClient) {
-    return formatUserName(ctx.from) || "someone";
-  }
-
-  try {
-    const members = await dbClient.listMembers(chatId);
-    if (!members.length) {
-      return formatUserName(ctx.from) || "someone";
-    }
-
-    const selected = members[Math.floor(Math.random() * members.length)];
-    return formatMemberLabel(selected);
-  } catch (err) {
-    console.error("Nomination lookup failed", err);
-    return formatUserName(ctx.from) || "someone";
-  }
-}
-
-function formatMemberLabel(member: ChatMemberRecord): string {
-  if (member.username) return `@${member.username}`;
-  const fullName = [member.first_name, member.last_name]
-    .filter(Boolean)
-    .join(" ");
-  return fullName || "someone";
-}
 
 function parseChatIdWhitelist(raw?: string): Set<number> {
   if (!raw) return new Set();
@@ -229,13 +160,6 @@ function stripBotMention(text: string, username: string): string {
 
 function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function formatUserName(user?: Context["from"]): string {
-  if (!user) return "";
-  const fullName = [user.first_name, user.last_name].filter(Boolean).join(" ");
-  if (fullName) return fullName;
-  return user.username ?? "";
 }
 
 main().catch((err) => {
