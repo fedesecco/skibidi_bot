@@ -54,7 +54,7 @@ bot.on("message", async (ctx) => {
       : "(user mentioned the bot without extra text)";
 
   try {
-    console.log("AI input:", normalized);
+    console.log("Sending message to LLM:", normalized);
     const reply = await generateChatReply({
       text: normalized,
       chatId,
@@ -64,6 +64,8 @@ bot.on("message", async (ctx) => {
       botUsername
     });
 
+    console.log("LLM output:", reply);
+
     const responseText = (
       await executeAiCommand(reply, { ctx, db })
     ).trim();
@@ -72,7 +74,6 @@ bot.on("message", async (ctx) => {
       return;
     }
 
-    console.log("AI output:", responseText);
     await ctx.reply(responseText, {
       reply_to_message_id: ctx.message?.message_id
     });
