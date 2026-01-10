@@ -1,5 +1,5 @@
 import { COMMANDS, InferredCommand } from "./commands.js";
-import { generateCompletion } from "./openai.js";
+import { generateCompletion } from "./gemini.js";
 
 export type AiReply = {
   inferredCommand: InferredCommand;

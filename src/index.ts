@@ -10,12 +10,12 @@ import type { BotContext } from "./types.js";
 config();
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
-const openAiKey = process.env.OPENAI_API_KEY;
+const geminiKey = process.env.GEMINI_API_KEY;
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
 
-if (!token || !openAiKey) {
-  throw new Error("Missing TELEGRAM_BOT_TOKEN or OPENAI_API_KEY in .env.");
+if (!token || !geminiKey) {
+  throw new Error("Missing TELEGRAM_BOT_TOKEN or GEMINI_API_KEY in .env.");
 }
 
 const allowedChatIds = parseChatIdWhitelist(process.env.ALLOWED_CHAT_IDS);
@@ -69,7 +69,7 @@ bot.on("message", async (ctx) => {
       reply_to_message_id: ctx.message?.message_id
     });
   } catch (err) {
-    console.error("OpenAI error", err);
+    console.error("Gemini error", err);
     await ctx.reply("Sorry, I ran into a problem while generating that.");
   }
 });
