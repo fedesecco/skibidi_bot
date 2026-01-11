@@ -21,10 +21,6 @@ export type CronRequest = {
   payload: unknown;
 };
 
-function buildChatInput(request: ChatRequest): string {
-  return request.text;
-}
-
 function buildCronInput(request: CronRequest): string {
   const variationHint = Math.random().toString(36).slice(2, 8);
   const payload =
@@ -172,9 +168,9 @@ function extractFirstJsonObject(value: string): string | null {
 }
 
 export async function generateChatReply(
-  request: ChatRequest
+  userMessage: string
 ): Promise<AiReply> {
-  const raw = await generateCompletion(buildChatInput(request));
+  const raw = await generateCompletion(userMessage);
   return parseAiReply(raw);
 }
 

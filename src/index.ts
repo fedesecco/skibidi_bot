@@ -3,7 +3,6 @@ import { config } from "dotenv";
 import http from "node:http";
 import { generateChatReply } from "./ai/index.js";
 import { executeAiCommand } from "./commands/index.js";
-import { formatUserName } from "./commands/utils.js";
 import { createDb, type DbClient } from "./db.js";
 import type { BotContext } from "./types.js";
 
@@ -55,14 +54,7 @@ bot.on("message", async (ctx) => {
 
   try {
     console.log("Sending message to LLM:", normalized);
-    const reply = await generateChatReply({
-      text: normalized,
-      chatId,
-      chatTitle: ctx.chat?.title,
-      userId: from.id,
-      userName: formatUserName(from),
-      botUsername
-    });
+    const reply = await generateChatReply(normalized);
 
     console.log("LLM output:", reply);
 

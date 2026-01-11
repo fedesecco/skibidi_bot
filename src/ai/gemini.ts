@@ -2,9 +2,9 @@ import { SYSTEM_PROMPT } from "./prompt.js";
 
 const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1";
 const GEMINI_MODEL = "gemini-2.5-flash";
-const GEMINI_TEMPERATURE = 1.1;
+const GEMINI_TEMPERATURE = 0.4;
 const GEMINI_MAX_OUTPUT_TOKENS = 250;
-const GEMINI_TOP_P = 0.95;
+const GEMINI_TOP_P = 0.70;
 const GEMINI_TOP_K = 40;
 
 function getGeminiApiKey(): string {
