@@ -1,6 +1,8 @@
 import type { Conversation } from "@grammyjs/conversations";
 import type { TranslationVariables } from "@grammyjs/i18n";
 import { InlineKeyboard } from "grammy";
+import type { DbClient } from "./db.js";
+import { DEFAULT_LANG } from "./i18n.js";
 import type { BotContext, ConversationContext } from "./types.js";
 
 const CANCEL_COMMAND = "/cancel";
@@ -26,98 +28,129 @@ type TimeParts = {
 
 type EventConversation = Conversation<BotContext, ConversationContext>;
 
-export async function eventConversation(
-  conversation: EventConversation,
-  ctx: ConversationContext
-) {
-  const creatorId = ctx.from?.id;
-  if (!creatorId) return;
+export function createEventConversation(db: DbClient | null) {
+  return async function eventConversation(
+    conversation: EventConversation,
+    ctx: ConversationContext
+  ) {
+    const creatorId = ctx.from?.id;
+    if (!creatorId) return;
 
-  const labelEventDate = t(ctx, "event_label_date");
-  const labelEventTime = t(ctx, "event_label_time");
-  const labelCloseDate = t(ctx, "event_label_close_date");
-  const labelCloseTime = t(ctx, "event_label_close_time");
+    const labelEventDate = t(ctx, "event_label_date");
+    const labelEventTime = t(ctx, "event_label_time");
+    const labelCloseDate = t(ctx, "event_label_close_date");
+    const labelCloseTime = t(ctx, "event_label_close_time");
 
-  const name = await promptForValue(
-    conversation,
-    ctx,
-    creatorId,
-    t(ctx, "event_name_prompt"),
-    parseName,
-    t(ctx, "event_name_invalid")
-  );
-  if (!name) return;
-
-  let eventDate: Date;
-  let dateLabel = "";
-  let timeLabel = "";
-
-  while (true) {
-    const date = await selectDate(
+    const name = await promptForValue(
       conversation,
       ctx,
       creatorId,
-      labelEventDate
+      t(ctx, "event_name_prompt"),
+      parseName,
+      t(ctx, "event_name_invalid")
     );
-    if (!date) return;
+    if (!name) return;
 
-    const time = await selectTime(
-      conversation,
-      ctx,
-      creatorId,
-      labelEventTime
-    );
-    if (!time) return;
+    let eventDate: Date;
+    let dateLabel = "";
+    let timeLabel = "";
 
-    eventDate = new Date(
-      date.year,
-      date.month - 1,
-      date.day,
-      time.hour,
-      time.minute,
-      0,
-      0
-    );
+    while (true) {
+      const date = await selectDate(
+        conversation,
+        ctx,
+        creatorId,
+        labelEventDate
+      );
+      if (!date) return;
 
-    const now = await conversation.now();
-    if (eventDate.getTime() <= now + MIN_POLL_CLOSE_LEAD_MS) {
-      await ctx.reply(t(ctx, "event_time_too_soon"));
-      continue;
+      const time = await selectTime(
+        conversation,
+        ctx,
+        creatorId,
+        labelEventTime
+      );
+      if (!time) return;
+
+      eventDate = new Date(
+        date.year,
+        date.month - 1,
+        date.day,
+        time.hour,
+        time.minute,
+        0,
+        0
+      );
+
+      const now = await conversation.now();
+      if (eventDate.getTime() <= now + MIN_POLL_CLOSE_LEAD_MS) {
+        await ctx.reply(t(ctx, "event_time_too_soon"));
+        continue;
+      }
+
+      dateLabel = formatDateLabel(date);
+      timeLabel = formatTimeLabel(time);
+      break;
     }
 
-    dateLabel = formatDateLabel(date);
-    timeLabel = formatTimeLabel(time);
-    break;
+    const closeDate = await selectCloseDate(
+      conversation,
+      ctx,
+      creatorId,
+      eventDate,
+      labelCloseDate,
+      labelCloseTime
+    );
+    if (!closeDate) return;
+
+    const closeLabel = formatDateTime(closeDate);
+    const closeHours =
+      (eventDate.getTime() - closeDate.getTime()) / MS_PER_HOUR;
+
+    const summary = t(ctx, "event_summary", {
+      name,
+      date: dateLabel,
+      time: timeLabel,
+      close: closeLabel,
+      offset: formatHours(closeHours)
+    });
+
+    await ctx.reply(summary);
+
+    const pollQuestion = buildPollQuestion(ctx, name, dateLabel, timeLabel);
+    await ctx.replyWithPoll(pollQuestion, ["Yes", "No"], {
+      is_anonymous: false,
+      close_date: Math.floor(closeDate.getTime() / 1000)
+    });
+
+    await persistEvent(db, ctx, name, eventDate, closeDate);
+  };
+}
+
+async function persistEvent(
+  db: DbClient | null,
+  ctx: ConversationContext,
+  name: string,
+  eventDate: Date,
+  reminderDate: Date
+) {
+  if (!db) return;
+  const chatId = ctx.chat?.id;
+  if (!chatId) return;
+
+  try {
+    await db.ensureChat(chatId, DEFAULT_LANG);
+    // Use the poll close time as reminder_date until a separate reminder is collected.
+    await db.createEvent({
+      chatId,
+      name,
+      eventDate,
+      reminderDate,
+      participants: []
+    });
+  } catch (err) {
+    console.error("Event save error", err);
   }
-
-  const closeDate = await selectCloseDate(
-    conversation,
-    ctx,
-    creatorId,
-    eventDate,
-    labelCloseDate,
-    labelCloseTime
-  );
-  if (!closeDate) return;
-
-  const closeLabel = formatDateTime(closeDate);
-  const closeHours = (eventDate.getTime() - closeDate.getTime()) / MS_PER_HOUR;
-
-  const summary = t(ctx, "event_summary", {
-    name,
-    date: dateLabel,
-    time: timeLabel,
-    close: closeLabel,
-    offset: formatHours(closeHours)
-  });
-
-  await ctx.reply(summary);
-
-  const pollQuestion = buildPollQuestion(ctx, name, dateLabel, timeLabel);
-  await ctx.replyWithPoll(pollQuestion, ["Yes", "No"], {
-    is_anonymous: false,
-    close_date: Math.floor(closeDate.getTime() / 1000)
-  });
 }
 
 async function promptForValue<T>(

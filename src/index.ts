@@ -5,7 +5,7 @@ import http from "node:http";
 import { generateChatReply } from "./ai/index.js";
 import { executeAiCommand } from "./commands/index.js";
 import { createDb, type DbClient } from "./db.js";
-import { eventConversation } from "./event.js";
+import { createEventConversation } from "./event.js";
 import { createI18n, DEFAULT_LANG } from "./i18n.js";
 import type { BotContext, ConversationContext } from "./types.js";
 import { getCronJob } from "./jobs/index.js";
@@ -48,7 +48,7 @@ const i18nConversation = createI18n<ConversationContext>(localeNegotiator);
 bot.use(i18n.middleware());
 bot.use(conversations());
 bot.use(
-  createConversation<BotContext, ConversationContext>(eventConversation, {
+  createConversation<BotContext, ConversationContext>(createEventConversation(db), {
     id: "event",
     plugins: [i18nConversation.middleware()]
   })
