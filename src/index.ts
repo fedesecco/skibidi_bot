@@ -1,11 +1,13 @@
 import { Bot, type Context, webhookCallback } from "grammy";
+import { conversations, createConversation } from "@grammyjs/conversations";
 import { config } from "dotenv";
 import http from "node:http";
 import { generateChatReply } from "./ai/index.js";
 import { executeAiCommand } from "./commands/index.js";
 import { createDb, type DbClient } from "./db.js";
-import { createI18n } from "./i18n.js";
-import type { BotContext } from "./types.js";
+import { eventConversation } from "./event.js";
+import { createI18n, DEFAULT_LANG } from "./i18n.js";
+import type { BotContext, ConversationContext } from "./types.js";
 import { getCronJob } from "./jobs/index.js";
 
 config();
@@ -29,17 +31,52 @@ if (allowedChatIds.size === 0) {
 }
 
 const bot = new Bot<BotContext>(token);
-const i18n = createI18n<BotContext>();
 const db = createDbIfConfigured(supabaseUrl, supabaseKey);
+const localeNegotiator = async (ctx: Context) => {
+  const chatId = ctx.chat?.id;
+  if (!db || !chatId) return DEFAULT_LANG;
+  try {
+    return await db.getChatLanguage(chatId);
+  } catch (err) {
+    console.error("Failed to resolve chat language", err);
+    return DEFAULT_LANG;
+  }
+};
+const i18n = createI18n<BotContext>(localeNegotiator);
+const i18nConversation = createI18n<ConversationContext>(localeNegotiator);
 
 bot.use(i18n.middleware());
+bot.use(conversations());
+bot.use(
+  createConversation<BotContext, ConversationContext>(eventConversation, {
+    id: "event",
+    plugins: [i18nConversation.middleware()]
+  })
+);
+
+bot.command("event", async (ctx) => {
+  const chatId = ctx.chat?.id;
+  if (!isAllowedChat(chatId)) return;
+  if (!ctx.from || ctx.from.is_bot) return;
+  if (ctx.conversation.active("event") > 0) {
+    await ctx.reply(ctx.t("event_setup_running"));
+    return;
+  }
+
+  try {
+    await ctx.conversation.enter("event");
+  } catch (err) {
+    console.error("Event conversation error", err);
+    await ctx.reply(ctx.t("event_setup_error"));
+  }
+});
 
 bot.on("message", async (ctx) => {
   console.log("onMessage");
   const chatId = ctx.chat?.id;
   const from = ctx.from;
   if (!chatId || !from || from.is_bot) return;
-  if (!allowedChatIds.has(chatId)) return;
+  if (!isAllowedChat(chatId)) return;
 
   const text = getMessageText(ctx);
   if (!text) return;
@@ -191,6 +228,10 @@ function createDbIfConfigured(
   return createDb(url, serviceKey);
 }
 
+function isAllowedChat(chatId?: number): boolean {
+  if (!chatId) return false;
+  return allowedChatIds.has(chatId);
+}
 
 function getMessageText(ctx: Context): string | null {
   return ctx.message?.text ?? ctx.message?.caption ?? null;

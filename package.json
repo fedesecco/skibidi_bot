@@ -1,6 +1,6 @@
 {
   "name": "skibidi-bot",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Telegram group bot that generates replies via Google Gemini",
   "private": true,
   "type": "module",
